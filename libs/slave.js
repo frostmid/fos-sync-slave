@@ -92,20 +92,25 @@ _.extend (module.exports.prototype, {
 		var self = this;
 
 		Q.when (this.feature (task.feature))
-			
 			.then (function (callback) {
 				return Q.when (callback.call (self, task));
 			})
 
-			.then (function (result) {
-				console.log ('Task completed, result is', result);
-				// TODO: Report task status to master
-			})
+			.then (_.bind (function (result) {
+				console.log ('task completed', task._id);
+				
+				this.socket.emit (task._id, {
+					status: 'ready'
+				});
+			}, this))
 
-			.fail (function (error) {
-				console.error ('Task failed, error is', error);
-				// TODO: Report task status to master
-			})
+			.fail (_.bind (function (error) {
+				console.log ('task failed', task._id, error);
+
+				this.socket.emit (task._id, {
+					error: error.message || error
+				});
+			}, this))
 
 			.done ();
 	},
@@ -127,7 +132,9 @@ _.extend (module.exports.prototype, {
 
 	emitter: function (task) {
 		return _.bind (function (entry) {
-			this.socket.emit (task._id, entry);
+			this.socket.emit (task._id, {
+				entry: entry
+			});
 		}, this);
 	}
 });
