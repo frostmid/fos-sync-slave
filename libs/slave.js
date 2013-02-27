@@ -4,6 +4,8 @@ var _ = require ('lodash'),
 
 module.exports = function () {
 	this.features = {};
+
+	this.emit = _.bind (this.emit, this);
 };
 
 _.extend (module.exports.prototype, {
@@ -12,16 +14,16 @@ _.extend (module.exports.prototype, {
 	features: null,
 	currentStatus: 'free',
 	retry: 1000,
+
 	_error: function (error) {
-		console.error (error);
+		console.error ('Error', error);
 	},
 
 	connect: function (io, url) {
 		if (this.socket) {
 			throw new Error ('Already connected');
 		}
-
-
+		
 		console.log ('Connecting to master', url);
 
 		(this.socket = io.connect (url))
@@ -87,13 +89,24 @@ _.extend (module.exports.prototype, {
 	handle: function (task) {
 		console.log ('Processing task', task._id);
 
+		var self = this;
+
 		Q.when (this.feature (task.feature))
+			
 			.then (function (callback) {
-				// TODO: Pass something to process found documents
-				// return Q.when (callback (task))
+				return Q.when (callback.call (self, task));
 			})
-			.then (console.log)		// TODO: Report task is ready
-			.fail (console.error)	// TODO: Report task error
+
+			.then (function (result) {
+				console.log ('Task completed, result is', result);
+				// TODO: Report task status to master
+			})
+
+			.fail (function (error) {
+				console.error ('Task failed, error is', error);
+				// TODO: Report task status to master
+			})
+
 			.done ();
 	},
 
@@ -110,5 +123,11 @@ _.extend (module.exports.prototype, {
 			default:
 				throw new Error ('Callback for feature ' + feature + ' is not a function');
 		}
+	},
+
+	emitter: function (task) {
+		return _.bind (function (entry) {
+			this.socket.emit (task._id, entry);
+		}, this);
 	}
 });
