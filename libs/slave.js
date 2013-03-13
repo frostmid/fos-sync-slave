@@ -47,7 +47,7 @@ _.extend (module.exports.prototype, {
 	},
 
 	connected: function () {
-		console.log ('Connected to master');
+		console.log ('Connected, waiting for tasks');
 		this.syncSettings ();
 	},
 
@@ -97,7 +97,7 @@ _.extend (module.exports.prototype, {
 			})
 
 			.then (_.bind (function (result) {
-				console.log ('task completed', task._id);
+				console.log ('Task completed', task._id);
 				
 				this.socket.emit (task._id, {
 					status: 'ready'
@@ -105,7 +105,7 @@ _.extend (module.exports.prototype, {
 			}, this))
 
 			.fail (_.bind (function (error) {
-				console.log ('task failed', task._id, error);
+				console.log ('Task failed', task._id, error);
 
 				this.socket.emit (task._id, {
 					error: error.message || error
