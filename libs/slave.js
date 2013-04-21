@@ -47,7 +47,6 @@ _.extend (module.exports.prototype, {
 
 	fail: function (callback) {
 		this._error = callback;
-
 		return this;
 	},
 
@@ -58,8 +57,6 @@ _.extend (module.exports.prototype, {
 
 	disconnected: function (error) {
 		console.error ('Disconnected from master');
-
-		this.socket = null;
 	},
 
 	disconnect: function () {
