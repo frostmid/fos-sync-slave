@@ -10,10 +10,12 @@ module.exports = function () {
 
 _.extend (module.exports.prototype, {
 	settings: null,
-	socket: null,
-	features: null,
-	currentStatus: 'free',
-	retry: 1000,
+		socket: null,
+		features: null,
+		currentStatus: 'free',
+		retry: 1000,
+		tasks: 0,
+		maxTasks: 10,
 
 	_error: function (error) {
 		console.error ('Error', error);
@@ -91,6 +93,10 @@ _.extend (module.exports.prototype, {
 	handle: function (task) {
 		console.log ('Processing task', task._id);
 
+		if (++this.tasks > this.maxTasks) {
+			this.status ('busy');
+		}
+
 		var self = this;
 
 		Q.when (this.feature (task.feature))
@@ -109,10 +115,19 @@ _.extend (module.exports.prototype, {
 			.fail (_.bind (function (error) {
 				console.log ('Task failed', task._id, error);
 
+				--self.tasks;
+
 				this.socket.emit (task._id, {
 					error: error.message || error
 				});
 			}, this))
+
+			.fin (function () {
+				--self.tasks;
+				if (self.currentStatus == 'busy') {
+					self.status ('free');
+				}
+			})
 
 			.done ();
 	},
