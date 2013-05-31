@@ -10,12 +10,13 @@ module.exports = function () {
 
 _.extend (module.exports.prototype, {
 	settings: null,
-		socket: null,
-		features: null,
-		currentStatus: 'free',
-		retry: 1000,
-		tasks: 0,
-		maxTasks: 10,
+	socket: null,
+	features: null,
+	currentStatus: 'free',
+	retry: 1000,
+	tasks: 0,
+	maxTasks: 10,
+	cancellers: {},
 
 	_error: function (error) {
 		console.error ('Error', error);
@@ -37,7 +38,8 @@ _.extend (module.exports.prototype, {
 			.on ('connect', _.bind (this.connected, this))
 			.on ('disconnect', _.bind (this.disconnected, this))
 			.on ('error', _.bind (this.error, this))
-			.on ('task', _.bind (this.handle, this));
+			.on ('task', _.bind (this.handle, this))
+			.on ('cancel', _.bind (this.cancel, this));
 
 		return this;
 	},
@@ -130,6 +132,17 @@ _.extend (module.exports.prototype, {
 			})
 
 			.done ();
+	},
+
+	cancel: function (taskId) {
+		if (typeof this.cancellers [taskId] == 'function') {
+			this.cancellers [taskId] ();
+			delete this.cancellers [taskId];
+		}
+	},
+
+	onCancel: function (taskId, callback) {
+		return this.cancellers [taskId] = callback;
 	},
 
 	feature: function (feature) {
