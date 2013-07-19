@@ -2,10 +2,11 @@ var _ = require ('lodash'),
 	Q = require ('q');
 
 
-module.exports = function () {
+module.exports = function (info) {
 	this.features = {};
 
 	this.emit = _.bind (this.emit, this);
+	this.info = info || null;
 };
 
 _.extend (module.exports.prototype, {
@@ -74,7 +75,8 @@ _.extend (module.exports.prototype, {
 		if (this.socket) {
 			this.socket.emit ('settings', {
 				features: _.keys (this.features),
-				status: this.currentStatus
+				status: this.currentStatus,
+				info: this.info
 			});
 		}
 	},
