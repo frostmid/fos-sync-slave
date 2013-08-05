@@ -164,9 +164,16 @@ _.extend (module.exports.prototype, {
 
 	emitter: function (task) {
 		return _.bind (function (entry) {
-			this.socket.emit (task._id, {
-				entry: entry
-			});
+			return Q.when (entry)
+				.then (function (entry) {
+					this.socket.emit (task._id, {
+						entry: entry
+					});
+				})
+				.fail (function (error) {
+					console.error ('Failed to emit normalized entry', error);
+				});
+			
 		}, this);
 	}
 });
