@@ -186,6 +186,12 @@ _.extend (module.exports.prototype, {
 		var self = this;
 		
 		return function (entry) {
+			if (entry instanceof Error) {
+				return self.socket.emit (task._id, {
+					warning: entry.message
+				});
+			}
+
 			return Q.when (entry)
 				.then (function (entry) {
 					self.socket.emit (task._id, {
