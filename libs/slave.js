@@ -21,6 +21,9 @@ _.extend (module.exports.prototype, {
 
 	_error: function (error) {
 		console.error ('Error', error);
+		if (typeof process != 'undefined') {
+			process.exit ();
+		}
 	},
 
 	connect: function (io, url) {
@@ -117,7 +120,13 @@ _.extend (module.exports.prototype, {
 			}, this))
 
 			.fail (_.bind (function (error) {
-				console.log ('Task failed', task._id, error);
+				if (error && error.stack) {
+					console.error ('Task failed', task._id, error.message);
+					console.error (error.stack);
+				} else {
+					console.error ('Task failed', task._id, error);
+				}
+				
 
 				--self.tasks;
 
