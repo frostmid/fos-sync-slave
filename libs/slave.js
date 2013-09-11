@@ -2,11 +2,12 @@ var _ = require ('lodash'),
 	Q = require ('q');
 
 
-module.exports = function (info) {
+module.exports = function (info, options) {
 	this.features = {};
 
 	this.emit = _.bind (this.emit, this);
 	this.info = info || null;
+	this.options = options || null;
 };
 
 _.extend (module.exports.prototype, {
@@ -26,7 +27,16 @@ _.extend (module.exports.prototype, {
 		}
 	},
 
-	connect: function (io, url) {
+	connect: function () {
+		try {
+			return this._connect.apply (this, arguments);
+		} catch (e) {
+			console.error ('Connect error', e.message, e.stack);
+			this.restartProcess ();
+		}
+	},
+
+	_connect: function (io, url) {
 		if (this.socket) {
 			throw new Error ('Already connected');
 		}
@@ -51,6 +61,7 @@ _.extend (module.exports.prototype, {
 	error: function (error) {
 		this.socket = null;
 		this._error.call (this, error);
+		this.restartProcess ();
 	},
 
 	fail: function (callback) {
@@ -65,12 +76,21 @@ _.extend (module.exports.prototype, {
 
 	disconnected: function (error) {
 		console.error ('Disconnected from master');
+		this.restartProcess ();
 	},
 
 	disconnect: function () {
 		if (this.socket) {
 			this.socket.disconnect ();
 			this.socket = null;
+		}
+	},
+
+	restartProcess: function () {
+		if (this.options && (typeof this.options.restart == 'function')) {
+			this.options.restart ();
+		} else {
+			console.warn ('Restart function not defined');
 		}
 	},
 
@@ -175,6 +195,12 @@ _.extend (module.exports.prototype, {
 		var self = this;
 		
 		return function (entry) {
+			if (entry instanceof Error) {
+				return self.socket.emit (task._id, {
+					warning: entry.message
+				});
+			}
+
 			return Q.when (entry)
 				.then (function (entry) {
 					self.socket.emit (task._id, {
