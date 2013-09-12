@@ -209,6 +209,12 @@ _.extend (module.exports.prototype, {
 				})
 				.fail (function (error) {
 					console.error ('Failed to emit normalized entry', error);
+
+					if (error) {
+						return self.socket.emit (task._id, {
+							warning: error.message ? error.message : error
+						});
+					}
 				});
 			
 		};
